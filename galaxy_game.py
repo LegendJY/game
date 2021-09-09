@@ -1,3 +1,4 @@
+#git test 중입니다.
 import pygame
 import sys
 import math
@@ -54,7 +55,7 @@ def move_starship(scrn,key):
     global ship_x,ship_y,ship_d,missile_move,key_spc,key_spc2,key_spc3,key_spc4,key_spc5,key_z
     ship_d= 0
     if key[K_UP] == 1:
-        ship_y = ship_y - 20 
+        ship_y = ship_y - 20
     if key[K_DOWN] == 1:
         ship_y = ship_y + 20
     if key[K_LEFT] == 1:
