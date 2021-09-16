@@ -25,6 +25,7 @@ key_z = 0
 MISSILE_MAX = 200
 msl_no = 0 # 탄환발사에 사용할 리스트 인덱스 변수
 
+
 msl_f = [False] * MISSILE_MAX
 msl_x = [0] * MISSILE_MAX
 msl_y = [0] * MISSILE_MAX
