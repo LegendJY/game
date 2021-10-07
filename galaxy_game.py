@@ -5,6 +5,11 @@ import math
 from pygame.locals import *
 import random
 
+BLACK = (0,0,0)
+SILVER = (192,208,224)
+RED = (255,0,0)
+CYAN = (0,255,255)
+
 img_galaxy = pygame.image.load("img/galaxy.png")
 img_ship = [ pygame.image.load("img/starship.png"),
              pygame.image.load("img/starship_l.png"),
@@ -23,6 +28,12 @@ img_explode = [None,
                pygame.image.load("img/explosion3.png"),
                pygame.image.load("img/explosion4.png"),
                pygame.image.load("img/explosion5.png") ]
+
+img_title = [ pygame.image.load("img/nebula.png"),
+              pygame.image.load("img/logo.png") ]
+
+idx = 0
+score = 0
 
 ENEMY_MAX = 100
 emy_no = 0
@@ -44,10 +55,10 @@ tmr = 0
 missile_move = 0
 
 bg_y = 0
-ship_x = 480
-ship_y = 360
+ship_x = 0#480
+ship_y = 0#360
 ship_d = 0
-ship_shield = 100
+ship_shield = 0#100
 ship_muteki = 0
 
 key_spc = 0
@@ -94,8 +105,15 @@ eff_y = [0] * EFFECT_MAX
 def get_dis(x1,y1,x2,y2):
     return (x1-x2)**2 + (y1-y2)**2
 
+def draw_text(scrn,txt,x,y,size,col):
+    fnt = pygame.font.Font(None,size)
+    sur = fnt.render(txt,True,col)
+    x = x - sur.get_width() / 2
+    y = y - sur.get_height() / 2
+    scrn.blit(sur,[x,y])
+
 def move_starship(scrn,key):
-    global ship_x,ship_y,ship_d,missile_move,key_spc,key_spc2,key_spc3,key_spc4,key_spc5,key_z,ship_shield,ship_muteki
+    global ship_x,ship_y,ship_d,missile_move,key_spc,key_spc2,key_spc3,key_spc4,key_spc5,key_z,ship_shield,ship_muteki,idx,tmr
     ship_d = 0
     if key[K_UP] == 1:
         ship_y = ship_y - 20
@@ -137,19 +155,22 @@ def move_starship(scrn,key):
     if ship_muteki > 0:
         ship_muteki -= 1
         return
-    for i in range(ENEMY_MAX):
-        if emy_f[i] == True:
-            w = img_enemy[emy_type[i]].get_width()
-            h = img_enemy[emy_type[i]].get_height()
-            r = ((w+h)/4 + (74 + 96)/4)
-            if get_dis(emy_x[i],emy_y[i],ship_x,ship_y) < r * r:
-                set_effect(ship_x,ship_y)
-                ship_shield = ship_shield - 10
-                if ship_shield <= 0:
-                    ship_shield = 0
-                if ship_muteki == 0:
-                    ship_muteki = 60
-                emy_f[i] = False
+    elif idx == 1:
+        for i in range(ENEMY_MAX):
+            if emy_f[i] == True:
+                w = img_enemy[emy_type[i]].get_width()
+                h = img_enemy[emy_type[i]].get_height()
+                r = ((w+h)/4 + (74 + 96)/4)
+                if get_dis(emy_x[i],emy_y[i],ship_x,ship_y) < r * r:
+                    set_effect(ship_x,ship_y)
+                    ship_shield = ship_shield - 10
+                    if ship_shield <= 0:
+                        ship_shield = 0
+                        idx = 2
+                        tmr = 0
+                    if ship_muteki == 0:
+                        ship_muteki = 60
+                    emy_f[i] = False
 
     if ship_y < 80:
         ship_y = 80
@@ -260,7 +281,7 @@ def set_enemy(x, y, a, ty, sp): # 적 기체 설정
         emy_no = (emy_no+1) % ENEMY_MAX
 
 def move_enemy(scrn):
-    global ship_shield
+    global ship_shield,idx,score,tmr
     for i in range(ENEMY_MAX):
         if emy_f[i] == True :
             ang = -90 - emy_a[i]
@@ -284,24 +305,28 @@ def move_enemy(scrn):
                         msl_f[n] = False
                         set_effect(emy_x[i],emy_y[i])
                         emy_f[i] = False
+                        score += 100
                         if ship_shield < 100:
                             ship_shield += 1
                     if msl_f2[n] == True and get_dis(emy_x[i],emy_y[i],msl_x2[n],msl_y2[n]) < r*r:
                         msl_f2[n] = False
                         set_effect(emy_x[i],emy_y[i])
                         emy_f[i] = False
+                        score += 100
                         if ship_shield < 100:
                             ship_shield += 1
                     if msl_f3[n] == True and get_dis(emy_x[i],emy_y[i],msl_x3[n],msl_y3[n]) < r*r:
                         msl_f3[n] = False
                         set_effect(emy_x[i],emy_y[i])
                         emy_f[i] = False
+                        score += 100
                         if ship_shield < 100:
                             ship_shield += 1
                     if msl_f4[n] == True and get_dis(emy_x[i],emy_y[i],msl_x4[n],msl_y4[n]) < r*r:
                         msl_f4[n] = False
                         set_effect(emy_x[i],emy_y[i])
                         emy_f[i] = False
+                        score += 100
                         if ship_shield < 100:
                             ship_shield += 1
 
@@ -324,7 +349,7 @@ def draw_effect(scrn):
                 eff_p[i] = 0
 
 def main():
-    global bg_y,tmr
+    global bg_y,tmr,idx,score,ship_x,ship_y,ship_d,ship_shield,ship_muteki
     pygame.init()
     pygame.display.set_caption("galaxy game")
     screen = pygame.display.set_mode((960,720))
@@ -348,16 +373,66 @@ def main():
         screen.blit(img_galaxy,[0,bg_y])
 
         key = pygame.key.get_pressed()
-        move_starship(screen,key)
-        move_missile(screen)
-        move_missile2(screen)
-        move_missile3(screen)
-        move_missile4(screen)
-        bring_enemy()
-        move_enemy(screen)
+
+        if idx == 0:
+            img_rz = pygame.transform.rotozoom(img_title[0],-tmr % 360,1.0)
+            screen.blit(img_rz,[480-img_rz.get_width()/2,280-img_rz.get_height()/2])
+            screen.blit(img_title[1],[70,160])
+            draw_text(screen,"Press [SPACE] to start",480,600,50,SILVER)
+            if key[K_SPACE] == 1:
+                idx = 1
+                tmr = 0
+                score = 0
+                ship_x = 480
+                ship_y = 600
+                ship_d = 0
+                ship_shield = 100
+                ship_muteki = 0
+                for i in range(ENEMY_MAX):
+                    emy_f[i] = False
+                for i in range(MISSILE_MAX):
+                    msl_f[i] = False
+                    msl_f2[i] = False
+                    msl_f3[i] = False
+                    msl_f4[i] = False
+
+        if idx == 1:
+            move_starship(screen,key)
+            move_missile(screen)
+            move_missile2(screen)
+            move_missile3(screen)
+            move_missile4(screen)
+            bring_enemy()
+            move_enemy(screen)
+            if tmr == 30 * 60:
+                idx = 3
+                tmr = 0
+
+        if idx == 2:
+            move_missile(screen)
+            move_missile2(screen)
+            move_missile3(screen)
+            move_missile4(screen)
+            draw_text(screen,"GAME OVER",480,300,80,RED)
+            if tmr == 150:
+                idx = 0
+                tmr = 0
+
+        if idx == 3:
+            move_starship(screen,key)
+            move_missile(screen)
+            move_missile2(screen)
+            move_missile3(screen)
+            move_missile4(screen)
+            draw_text(screen,"GAME OVER",480,300,80,SILVER)
+
         draw_effect(screen)
-        screen.blit(img_shield,[40,680])
-        pygame.draw.rect(screen,(64,32,32),[40+ship_shield * 4,680,(100 - ship_shield) * 4 ,12])
+        draw_text(screen,"SCORE"+str(score),200,30,50,SILVER)
+
+        if idx != 0:
+            screen.blit(img_shield,[40,680])
+            pygame.draw.rect(screen,(64,32,32),[40+ship_shield * 4,680,(100 - ship_shield) * 4 ,12])
+
         pygame.display.update()
         clock.tick(20)
 
