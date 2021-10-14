@@ -20,7 +20,10 @@ img_weapon = pygame.image.load("img/bullet.png")
 img_shield = pygame.image.load("img/shield.png")
 
 img_enemy = [ pygame.image.load("img/enemy0.png"),
-              pygame.image.load("img/enemy1.png") ]
+              pygame.image.load("img/enemy1.png"),
+              pygame.image.load("img/enemy2.png"),
+              pygame.image.load("img/enemy3.png"),
+              pygame.image.load("img/enemy4.png") ]
 
 img_explode = [None,
                pygame.image.load("img/explosion1.png"),
@@ -31,6 +34,11 @@ img_explode = [None,
 
 img_title = [ pygame.image.load("img/nebula.png"),
               pygame.image.load("img/logo.png") ]
+
+se_barrage = None
+se_damage = None
+se_explosion = None
+se_shot = None
 
 idx = 0
 score = 0
@@ -129,29 +137,47 @@ def move_starship(scrn,key):
     key_spc = (key_spc + 1) * key[K_w]
     if key_spc % 5 == 1:
         set_missile(0)
+        se_shot.play()
+
     key_spc2 = (key_spc2 + 1) * key[K_s]
     if key_spc2 % 5 == 1:
         set_missile2(0)
+        se_shot.play()
+
     key_spc3 = (key_spc3 + 1) * key[K_a]
     if key_spc3 % 5 == 1:
         set_missile3(0)
+        se_shot.play()
+
     key_spc4 = (key_spc4 + 1) * key[K_d]
     if key_spc4 % 5 == 1:
         set_missile4(0)
+        se_shot.play()
+
     key_spc5 = (key_spc5 + 1) * key[K_SPACE]
     if key_spc5 % 5 == 1:
         set_missile(0)
         set_missile2(0)
         set_missile3(0)
         set_missile4(0)
+        se_shot.play()
 
     key_z = (key_z+1) * key[K_z]
     if key_z == 1 and ship_shield > 10:
         set_missile(10)
         ship_shield -= 10
+        se_barrage.play()
     if ship_muteki % 2 == 0:
         scrn.blit(img_ship[3], [ship_x - 8, ship_y + 40 + (tmr % 3) * 2])
         scrn.blit(img_ship[ship_d], [ship_x - 37, ship_y - 48])
+        if ship_y < 80:
+            ship_y = 80
+        if ship_y > 640:
+            ship_y = 640
+        if ship_x < 40:
+            ship_x = 40
+        if ship_x > 920:
+            ship_x = 920
     if ship_muteki > 0:
         ship_muteki -= 1
         return
@@ -170,6 +196,7 @@ def move_starship(scrn,key):
                         tmr = 0
                     if ship_muteki == 0:
                         ship_muteki = 60
+                        se_damage.play()
                     emy_f[i] = False
 
     if ship_y < 80:
@@ -306,6 +333,7 @@ def move_enemy(scrn):
                         set_effect(emy_x[i],emy_y[i])
                         emy_f[i] = False
                         score += 100
+                        se_explosion.play()
                         if ship_shield < 100:
                             ship_shield += 1
                     if msl_f2[n] == True and get_dis(emy_x[i],emy_y[i],msl_x2[n],msl_y2[n]) < r*r:
@@ -313,6 +341,7 @@ def move_enemy(scrn):
                         set_effect(emy_x[i],emy_y[i])
                         emy_f[i] = False
                         score += 100
+                        se_explosion.play()
                         if ship_shield < 100:
                             ship_shield += 1
                     if msl_f3[n] == True and get_dis(emy_x[i],emy_y[i],msl_x3[n],msl_y3[n]) < r*r:
@@ -320,6 +349,7 @@ def move_enemy(scrn):
                         set_effect(emy_x[i],emy_y[i])
                         emy_f[i] = False
                         score += 100
+                        se_explosion.play()
                         if ship_shield < 100:
                             ship_shield += 1
                     if msl_f4[n] == True and get_dis(emy_x[i],emy_y[i],msl_x4[n],msl_y4[n]) < r*r:
@@ -327,6 +357,7 @@ def move_enemy(scrn):
                         set_effect(emy_x[i],emy_y[i])
                         emy_f[i] = False
                         score += 100
+                        se_explosion.play()
                         if ship_shield < 100:
                             ship_shield += 1
 
@@ -350,10 +381,15 @@ def draw_effect(scrn):
 
 def main():
     global bg_y,tmr,idx,score,ship_x,ship_y,ship_d,ship_shield,ship_muteki
+    global se_barrage,se_damage,se_shot,se_explosion
     pygame.init()
     pygame.display.set_caption("galaxy game")
     screen = pygame.display.set_mode((960,720))
     clock = pygame.time.Clock()
+    se_barrage = pygame.mixer.Sound("sound_gl/sound_gl_barrage.ogg")
+    se_damage = pygame.mixer.Sound("sound_gl/sound_gl_damage.ogg")
+    se_explosion = pygame.mixer.Sound("sound_gl/sound_gl_explosion.ogg")
+    se_shot = pygame.mixer.Sound("sound_gl/sound_gl_shot.ogg")
 
     while True:
         for event in pygame.event.get():
@@ -395,6 +431,8 @@ def main():
                     msl_f2[i] = False
                     msl_f3[i] = False
                     msl_f4[i] = False
+                pygame.mixer.music.load("sound_gl/sound_gl_bgm.ogg")
+                pygame.mixer.music.play(-1)
 
         if idx == 1:
             move_starship(screen,key)
@@ -413,8 +451,21 @@ def main():
             move_missile2(screen)
             move_missile3(screen)
             move_missile4(screen)
-            draw_text(screen,"GAME OVER",480,300,80,RED)
-            if tmr == 150:
+            if tmr == 1:
+                pygame.mixer.music.stop()
+            if tmr <= 90:
+                if tmr % 5 == 0:
+                    set_effect(ship_x + random.randint(-60,60),ship_y + random.randint(-60,60))
+                if tmr % 10 == 0:
+                    se_damage.play()
+            if tmr == 120:
+                pygame.mixer.music.load("sound_gl/sound_gl_gameover.ogg")
+                pygame.mixer.music.play(0)
+
+            if tmr > 120:
+                draw_text(screen, "GAME OVER", 480, 300, 80, RED)
+
+            if tmr == 400:
                 idx = 0
                 tmr = 0
 
@@ -424,7 +475,17 @@ def main():
             move_missile2(screen)
             move_missile3(screen)
             move_missile4(screen)
-            draw_text(screen,"GAME OVER",480,300,80,SILVER)
+
+            if tmr == 1:
+                pygame.mixer.music.stop()
+            if tmr == 2:
+                pygame.mixer.music.load("sound_gl/sound_gl_gameclear.ogg")
+                pygame.mixer.music.play(0)
+            if tmr >= 20:
+                draw_text(screen,"GAME OVER",480,300,80,SILVER)
+            if tmr == 300:
+                idx = 0
+                tmr = 0
 
         draw_effect(screen)
         draw_text(screen,"SCORE"+str(score),200,30,50,SILVER)
