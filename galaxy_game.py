@@ -23,7 +23,11 @@ img_enemy = [ pygame.image.load("img/enemy0.png"),
               pygame.image.load("img/enemy1.png"),
               pygame.image.load("img/enemy2.png"),
               pygame.image.load("img/enemy3.png"),
-              pygame.image.load("img/enemy4.png") ]
+              pygame.image.load("img/enemy4.png"),
+              #pygame.transform.rotozoom(pygame.image.load("img/enemy5.png"),0,2.0),
+              pygame.image.load("img/enemy_boss.png"),
+              pygame.image.load("img/enemy_boss_f.png")
+              ]
 
 img_explode = [None,
                pygame.image.load("img/explosion1.png"),
@@ -51,8 +55,12 @@ emy_y = [0] * ENEMY_MAX
 emy_a = [0] * ENEMY_MAX
 emy_type = [0] * ENEMY_MAX
 emy_speed = [0] * ENEMY_MAX
+emy_shield = [0] * ENEMY_MAX
+emy_count= [0] * ENEMY_MAX
 
 ENEMY_BULLET = 0
+EMY_ZAKO = 1
+EMY_BOSS = 5
 
 LINE_T = -80
 LINE_B = 800
@@ -291,10 +299,35 @@ def move_missile4(scrn):
                 msl_f4[i] = False
 
 def bring_enemy():
-    if tmr % 30 == 0:
-        set_enemy(random.randint(20,940),LINE_T,90,1,6)
+    sec = tmr / 30
+    if sec > 0 and sec < 15 and tmr % 60 == 0:
+        set_enemy(random.randint(20,940),LINE_T,90,EMY_ZAKO,8,3)
+        set_enemy(random.randint(20, 940), LINE_T, 90, EMY_ZAKO + 1, 12, 5)
+        set_enemy(random.randint(100, 860), LINE_T, random.randint(60, 120), EMY_ZAKO + 2, 6, 7)
+        set_enemy(random.randint(100, 860), LINE_T, random.randint(60, 120), EMY_ZAKO + 4, 15, 10)
+    if tmr == 30 * 20:
+        set_enemy(480,-210,90,EMY_BOSS,4,200)
+    '''if tmr % 30 == 0:
+        if sec > 0 and sec < 15:
+            set_enemy(random.randint(20,940),LINE_T,90,EMY_ZAKO,8,3)
+        if sec > 15 and sec < 30:
+            set_enemy(random.randint(20, 940), LINE_T, 90, EMY_ZAKO+1, 12,5)
+        if sec > 30 and sec < 45:
+            set_enemy(random.randint(100, 860), LINE_T, random.randint(60,120), EMY_ZAKO+2, 6,7)
+        if sec > 45 and sec < 60:
+            set_enemy(random.randint(100, 860), LINE_T, 90, EMY_ZAKO+3, 12,9)
+        if sec > 60 and sec < 75:
+            set_enemy(random.randint(100, 860), LINE_T, random.randint(60,120), EMY_ZAKO+4, 15,10)
+        if sec > 75 and sec < 90:
+            set_enemy(random.randint(20, 940), LINE_T, 90, EMY_ZAKO, 8, 3)
+            set_enemy(random.randint(20, 940), LINE_T, 90, EMY_ZAKO + 1, 12, 5)
+            set_enemy(random.randint(100, 860), LINE_T, random.randint(60, 120), EMY_ZAKO + 2, 6, 7)
+            set_enemy(random.randint(100, 860), LINE_T, 90, EMY_ZAKO + 3, 12, 9)
+            set_enemy(random.randint(100, 860), LINE_T, random.randint(60,120), EMY_ZAKO+4, 15,10)
+        if sec > 90 and sec < 105:
+            set_enemy(480,-210,90,EMY_BOSS,4,200)'''
 
-def set_enemy(x, y, a, ty, sp): # 적 기체 설정
+def set_enemy(x, y, a, ty, sp,sh): # 적 기체 설정
     global emy_no
     while True:
         if emy_f[emy_no] == False :
@@ -304,6 +337,8 @@ def set_enemy(x, y, a, ty, sp): # 적 기체 설정
             emy_a[emy_no] = a
             emy_type[emy_no] = ty
             emy_speed[emy_no] = sp
+            emy_shield[emy_no] = sh
+            emy_count[emy_no] = 0
             break
         emy_no = (emy_no+1) % ENEMY_MAX
 
@@ -313,53 +348,97 @@ def move_enemy(scrn):
         if emy_f[i] == True :
             ang = -90 - emy_a[i]
             png =  emy_type[i]
-            emy_x[i] = emy_x[i] + emy_speed[i] * math.cos(math.radians(emy_a[i]))
-            emy_y[i] = emy_y[i] + emy_speed[i] * math.sin(math.radians(emy_a[i]))
-            if emy_type[i] == 1 and emy_y[i] > 360:
-                set_enemy(emy_x[i], emy_y[i], 90, 0, 8)
-                emy_a[i] = -10
-                emy_speed[i] = 100
+            if emy_type[i] < EMY_BOSS:
+                emy_x[i] = emy_x[i] + emy_speed[i] * math.cos(math.radians(emy_a[i]))
+                emy_y[i] = emy_y[i] + emy_speed[i] * math.sin(math.radians(emy_a[i]))
 
-            if emy_x[i] < LINE_L or LINE_R < emy_x[i] or emy_y[i] < LINE_T or LINE_B < emy_y[i] :
-                emy_f[i] = False
+                if emy_type[i] == 4:
+                    emy_count[i] += 1
+                    ang = emy_count[i] * 10
+                    if emy_y[i] > 240 and emy_a[i] == 90:
+                        emy_a[i] = random.choice([50,70,110,130])
+                        set_enemy(emy_x[i],emy_y[i],90,ENEMY_BULLET,6,0)
+
+
+                if emy_x[i] < LINE_L or LINE_R < emy_x[i] or emy_y[i] < LINE_T or LINE_B < emy_y[i] :
+                    emy_f[i] = False
+            else:
+                if emy_count[i] == 0:
+                    emy_y[i] += 2
+                    if emy_y[i] >= 200:
+                        emy_count[i] = 1
+                elif emy_count[i] == 1:
+                    emy_x[i] = emy_x[i] + emy_speed[i]
+                    if emy_x[i] < 200:
+                        for j in range(0,10):
+                            set_enemy(emy_x[i],emy_y+80,j*20,ENEMY_BULLET,6,0)
+                        emy_count[i] = 2
+                else:
+                    emy_x[i] += emy_speed[i]
+                    if emy_x[i] > 760:
+                        for j in range(0,10):
+                            set_enemy(emy_x[i],emy_y+80,j*20,ENEMY_BULLET,6,0)
+                        emy_count[i] = 1
+
+                if emy_shield[i] < 100 and tmr % 30 == 0:
+                    set_enemy(emy_x[i],emy_y[i]+ 80,random.randint(60,120),ENEMY_BULLET,6,0)
 
             if emy_type[i] != ENEMY_BULLET:
                 w = img_enemy[emy_type[i]].get_width()
                 h = img_enemy[emy_type[i]].get_height()
                 r = int(w+h / 4) + 12
+                er = int((w+h) / 4)
                 for n in range(MISSILE_MAX):
                     if msl_f[n] == True and get_dis(emy_x[i],emy_y[i],msl_x[n],msl_y[n]) < r*r:
                         msl_f[n] = False
-                        set_effect(emy_x[i],emy_y[i])
-                        emy_f[i] = False
+                        set_effect(emy_x[i]+random.randint(-er,er),emy_y[i]+random.randint(-er,er))
+                        if emy_type[i] == EMY_BOSS:
+                            png = emy_type[i] + 1
+                        emy_shield[i] -= 1
                         score += 100
-                        se_explosion.play()
-                        if ship_shield < 100:
-                            ship_shield += 1
+                        if emy_shield[i] == 0:
+                            emy_f[i] = False
+                            if ship_shield < 100:
+                                ship_shield += 1
+                            if emy_type == EMY_BOSS and idx == 1:
+                                idx = 3
+                                tmr = 0
+                                for j in range(10):
+                                    set_effect(emy_x[i] + random.randint(-er,er),emy_y[i] + random.randint(-er,er))
+                                se_explosion.play()
+
                     if msl_f2[n] == True and get_dis(emy_x[i],emy_y[i],msl_x2[n],msl_y2[n]) < r*r:
                         msl_f2[n] = False
-                        set_effect(emy_x[i],emy_y[i])
-                        emy_f[i] = False
+                        set_effect(emy_x[i], emy_y[i])
+                        emy_shield[i] -= 1
                         score += 100
+                        if emy_shield[i] == 0:
+                            if emy_type[i] < EMY_BOSS:
+                                emy_f[i] = False
+                            if ship_shield < 100:
+                                ship_shield += 1
                         se_explosion.play()
-                        if ship_shield < 100:
-                            ship_shield += 1
                     if msl_f3[n] == True and get_dis(emy_x[i],emy_y[i],msl_x3[n],msl_y3[n]) < r*r:
                         msl_f3[n] = False
-                        set_effect(emy_x[i],emy_y[i])
-                        emy_f[i] = False
+                        set_effect(emy_x[i], emy_y[i])
+                        emy_shield[i] -= 1
                         score += 100
+                        if emy_shield[i] == 0:
+                            emy_f[i] = False
+                            if ship_shield < 100:
+                                ship_shield += 1
                         se_explosion.play()
-                        if ship_shield < 100:
-                            ship_shield += 1
                     if msl_f4[n] == True and get_dis(emy_x[i],emy_y[i],msl_x4[n],msl_y4[n]) < r*r:
                         msl_f4[n] = False
-                        set_effect(emy_x[i],emy_y[i])
-                        emy_f[i] = False
+                        set_effect(emy_x[i], emy_y[i])
+                        emy_shield[i] -= 1
                         score += 100
+                        if emy_shield[i] == 0:
+                            if emy_type[i] < EMY_BOSS:
+                                emy_f[i] = False
+                            if ship_shield < 100:
+                                ship_shield += 1
                         se_explosion.play()
-                        if ship_shield < 100:
-                            ship_shield += 1
 
             img_rz = pygame.transform.rotozoom(img_enemy[png], ang, 1.0)
             scrn.blit(img_rz, [emy_x[i] - img_rz.get_width() / 2, emy_y[i] - img_rz.get_height() /2] )
@@ -442,7 +521,7 @@ def main():
             move_missile4(screen)
             bring_enemy()
             move_enemy(screen)
-            if tmr == 30 * 60:
+            if tmr == 105 * 30:
                 idx = 3
                 tmr = 0
 
@@ -482,7 +561,7 @@ def main():
                 pygame.mixer.music.load("sound_gl/sound_gl_gameclear.ogg")
                 pygame.mixer.music.play(0)
             if tmr >= 20:
-                draw_text(screen,"GAME OVER",480,300,80,SILVER)
+                draw_text(screen,"GAME CLEAR",480,300,80,SILVER)
             if tmr == 300:
                 idx = 0
                 tmr = 0
